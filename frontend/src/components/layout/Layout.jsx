@@ -4,14 +4,15 @@ import { useAuthStore } from '../../stores/auth';
 import { cn } from '../../lib/utils';
 import {
   LayoutDashboard, Users, UserCheck, Building2, Package,
-  FileText, Calendar, Upload, Bot, Settings, LogOut,
-  Menu, X, ChevronDown, Bell
+  FileText, Calendar, Upload, Bot, LogOut,
+  Menu, X, CreditCard
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/membros', label: 'Membros', icon: Users },
   { href: '/obreiros', label: 'Obreiros', icon: UserCheck },
+  { href: '/carteirinhas', label: 'Carteirinhas', icon: CreditCard },
   { href: '/congregacoes', label: 'Congregações', icon: Building2, somentesSede: true },
   { href: '/patrimonio', label: 'Patrimônio', icon: Package },
   { href: '/documentos', label: 'Documentos', icon: FileText },

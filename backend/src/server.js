@@ -25,6 +25,9 @@ app.use('/api/agenda', require('./routes/agenda'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/ia', require('./routes/ia'));
 app.use('/api/importacao', require('./routes/importacao'));
+app.use('/api/carteirinhas', require('./routes/carteirinhas'));
+app.use('/api/batismos', require('./routes/batismos'));
+app.use('/api/documentos', require('./routes/documentos'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', versao: '1.0.0', timestamp: new Date().toISOString() }));

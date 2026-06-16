@@ -7,8 +7,14 @@ import Login from './pages/auth/Login';
 import Callback from './pages/auth/Callback';
 import Dashboard from './pages/dashboard/Dashboard';
 import Membros from './pages/membros/Membros';
-import AssistenteIA from './pages/ia/AssistenteIA';
+import Obreiros from './pages/obreiros/Obreiros';
+import Congregacoes from './pages/congregacoes/Congregacoes';
+import Patrimonio from './pages/patrimonio/Patrimonio';
+import Agenda from './pages/agenda/Agenda';
+import Documentos from './pages/documentos/Documentos';
+import Carteirinhas from './pages/carteirinhas/Carteirinhas';
 import Importacao from './pages/importacao/Importacao';
+import AssistenteIA from './pages/ia/AssistenteIA';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -50,16 +56,17 @@ export default function App() {
             </div>
           } />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<RotaProtegida><Dashboard /></RotaProtegida>} />
-          <Route path="/membros" element={<RotaProtegida><Membros /></RotaProtegida>} />
-          <Route path="/ia" element={<RotaProtegida><AssistenteIA /></RotaProtegida>} />
-          <Route path="/importacao" element={<RotaProtegida><SomentesSede><Importacao /></SomentesSede></RotaProtegida>} />
-          <Route path="/obreiros" element={<RotaProtegida><div className="p-8 text-gray-500 text-center">Módulo Obreiros — Em breve</div></RotaProtegida>} />
-          <Route path="/congregacoes" element={<RotaProtegida><div className="p-8 text-gray-500 text-center">Módulo Congregações — Em breve</div></RotaProtegida>} />
-          <Route path="/patrimonio" element={<RotaProtegida><div className="p-8 text-gray-500 text-center">Módulo Patrimônio — Em breve</div></RotaProtegida>} />
-          <Route path="/documentos" element={<RotaProtegida><div className="p-8 text-gray-500 text-center">Módulo Documentos — Em breve</div></RotaProtegida>} />
-          <Route path="/agenda" element={<RotaProtegida><div className="p-8 text-gray-500 text-center">Módulo Agenda — Em breve</div></RotaProtegida>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"    element={<RotaProtegida><Dashboard /></RotaProtegida>} />
+          <Route path="/membros"      element={<RotaProtegida><Membros /></RotaProtegida>} />
+          <Route path="/obreiros"     element={<RotaProtegida><Obreiros /></RotaProtegida>} />
+          <Route path="/carteirinhas" element={<RotaProtegida><Carteirinhas /></RotaProtegida>} />
+          <Route path="/congregacoes" element={<RotaProtegida><SomentesSede><Congregacoes /></SomentesSede></RotaProtegida>} />
+          <Route path="/patrimonio"   element={<RotaProtegida><Patrimonio /></RotaProtegida>} />
+          <Route path="/documentos"   element={<RotaProtegida><Documentos /></RotaProtegida>} />
+          <Route path="/agenda"       element={<RotaProtegida><Agenda /></RotaProtegida>} />
+          <Route path="/importacao"   element={<RotaProtegida><SomentesSede><Importacao /></SomentesSede></RotaProtegida>} />
+          <Route path="/ia"           element={<RotaProtegida><AssistenteIA /></RotaProtegida>} />
+          <Route path="*"             element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
