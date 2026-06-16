@@ -1,0 +1,36 @@
+services:
+  backend:
+    build: ./backend
+    container_name: kairos-backend
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - kairos-data:/app/data
+      - kairos-uploads:/app/uploads
+    networks:
+      - kairos-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: kairos-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - kairos-net
+
+volumes:
+  kairos-data:
+  kairos-uploads:
+
+networks:
+  kairos-net:
+    driver: bridge
