@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard, Users, UserCheck, Building2, Package,
   FileText, Calendar, Upload, Bot, LogOut,
-  Menu, X, CreditCard
+  Menu, X, CreditCard, Droplets, Settings
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -17,8 +17,10 @@ const NAV_ITEMS = [
   { href: '/patrimonio', label: 'Patrimônio', icon: Package },
   { href: '/documentos', label: 'Documentos', icon: FileText },
   { href: '/agenda', label: 'Agenda', icon: Calendar },
+  { href: '/batismos', label: 'Batismos', icon: Droplets },
   { href: '/importacao', label: 'Importação', icon: Upload, somentesSede: true },
   { href: '/ia', label: 'Assistente IA', icon: Bot },
+  { href: '/configuracoes', label: 'Configurações', icon: Settings, somentesSede: true },
 ];
 
 export default function Layout({ children }) {

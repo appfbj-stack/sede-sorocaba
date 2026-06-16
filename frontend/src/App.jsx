@@ -15,6 +15,8 @@ import Documentos from './pages/documentos/Documentos';
 import Carteirinhas from './pages/carteirinhas/Carteirinhas';
 import Importacao from './pages/importacao/Importacao';
 import AssistenteIA from './pages/ia/AssistenteIA';
+import Batismos from './pages/batismos/Batismos';
+import Configuracoes from './pages/configuracoes/Configuracoes';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -65,7 +67,9 @@ export default function App() {
           <Route path="/documentos"   element={<RotaProtegida><Documentos /></RotaProtegida>} />
           <Route path="/agenda"       element={<RotaProtegida><Agenda /></RotaProtegida>} />
           <Route path="/importacao"   element={<RotaProtegida><SomentesSede><Importacao /></SomentesSede></RotaProtegida>} />
-          <Route path="/ia"           element={<RotaProtegida><AssistenteIA /></RotaProtegida>} />
+          <Route path="/ia"            element={<RotaProtegida><AssistenteIA /></RotaProtegida>} />
+          <Route path="/batismos"     element={<RotaProtegida><Batismos /></RotaProtegida>} />
+          <Route path="/configuracoes" element={<RotaProtegida><SomentesSede><Configuracoes /></SomentesSede></RotaProtegida>} />
           <Route path="*"             element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
