@@ -33,7 +33,7 @@ router.get('/google/callback', async (req, res) => {
     }
 
     // Atualiza foto e nome
-    db.prepare('UPDATE usuarios SET nome = ?, foto_url = ?, atualizado_em = datetime("now") WHERE id = ?')
+    db.prepare('UPDATE usuarios SET nome = ?, foto_url = ? WHERE id = ?')
       .run(userInfo.name, userInfo.picture, usuario.id);
 
     const jwtToken = jwt.sign(
