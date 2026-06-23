@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import { formatarData, calcularIdade, STATUS_MEMBRO } from '../../lib/utils';
-import { Plus, Search, ChevronLeft, ChevronRight, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Edit, Trash2, User, Download, ShieldOff } from 'lucide-react';
 import FormMembro from './FormMembro';
 
 export default function Membros() {
@@ -22,6 +22,21 @@ export default function Membros() {
   const deletar = useMutation({
     mutationFn: (id) => api.delete(`/membros/${id}`),
     onSuccess: () => qc.invalidateQueries(['membros']),
+  });
+
+  const exportar = useMutation({
+    mutationFn: (id) => api.get(`/membros/${id}/exportar-dados`).then(r => r.data),
+    onSuccess: (data) => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `dados-lgpd-${data.dados_pessoais?.nome || 'anonimizado'}.json`;
+      a.click(); URL.revokeObjectURL(url);
+    },
+  });
+
+  const anonimizar = useMutation({
+    mutationFn: (id) => api.post(`/membros/${id}/anonimizar`),
+    onSuccess: () => { qc.invalidateQueries(['membros']); qc.invalidateQueries(['dashboard']); },
   });
 
   const abrirEdicao = (membro) => { setMembroEditando(membro); setModalAberto(true); };
@@ -93,6 +108,8 @@ export default function Membros() {
                     </span>
                     <div className="flex gap-1">
                       <button onClick={() => abrirEdicao(m)} className="p-1 text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
+                      <button onClick={() => exportar.mutate(m.id)} className="p-1 text-gray-400 hover:text-green-600" title="Exportar dados"><Download size={14} /></button>
+                      {!m.anonimizado_em && <button onClick={() => { if (confirm('Anonimizar dados pessoais deste membro? Esta ação não pode ser desfeita.')) anonimizar.mutate(m.id); }} className="p-1 text-gray-400 hover:text-orange-600" title="Anonimizar"><ShieldOff size={14} /></button>}
                       <button onClick={() => deletar.mutate(m.id)} className="p-1 text-gray-400 hover:text-red-600"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -135,7 +152,9 @@ export default function Membros() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => abrirEdicao(m)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded"><Edit size={15} /></button>
+                        <button onClick={() => abrirEdicao(m)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded" title="Editar"><Edit size={15} /></button>
+                        <button onClick={() => exportar.mutate(m.id)} className="p-1.5 text-gray-400 hover:text-green-600 rounded" title="Exportar dados"><Download size={15} /></button>
+                        {!m.anonimizado_em && <button onClick={() => { if (confirm('Anonimizar dados pessoais deste membro? Esta ação não pode ser desfeita.')) anonimizar.mutate(m.id); }} className="p-1.5 text-gray-400 hover:text-orange-600 rounded" title="Anonimizar"><ShieldOff size={15} /></button>}
                         <button onClick={() => { if (confirm('Remover membro?')) deletar.mutate(m.id); }} className="p-1.5 text-gray-400 hover:text-red-600 rounded"><Trash2 size={15} /></button>
                       </div>
                     </td>

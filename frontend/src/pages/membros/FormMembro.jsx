@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Shield } from 'lucide-react';
 
 const CAMPOS = [
   { name: 'nome', label: 'Nome completo *', type: 'text', required: true },
@@ -27,6 +27,7 @@ export default function FormMembro({ membro, onFechar }) {
     nome: '', cpf: '', rg: '', data_nascimento: '', telefone: '', whatsapp: '',
     endereco: '', estado_civil: '', data_conversao: '', data_batismo: '',
     cargo: '', status: 'ativo', observacoes: '', congregacao_id: '',
+    consentimento_lgpd: false,
     ...membro,
   });
   const [foto, setFoto] = useState(null);
@@ -41,7 +42,8 @@ export default function FormMembro({ membro, onFechar }) {
   const salvar = useMutation({
     mutationFn: () => {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      Object.entries(form).forEach(([k, v]) => { if (v !== '' && v !== null) fd.append(k, v); });
+      fd.set('consentimento_lgpd', form.consentimento_lgpd ? 'true' : 'false');
       if (foto) fd.append('foto', foto);
       if (membro?.id) return api.put(`/membros/${membro.id}`, fd);
       return api.post('/membros', fd);
@@ -109,6 +111,21 @@ export default function FormMembro({ membro, onFechar }) {
                 )}
               </div>
             ))}
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+            <Shield size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.consentimento_lgpd}
+                  onChange={e => setForm(f => ({ ...f, consentimento_lgpd: e.target.checked }))}
+                  className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Consentimento LGPD</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Autorizo o armazenamento e tratamento dos meus dados pessoais conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018) para fins de gestão eclesiástica.</p>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 

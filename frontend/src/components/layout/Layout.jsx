@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard, User, Users, Settings, FileClock,
   ShieldCheck, Activity, LogOut, Menu, X,
-  Building2, UserCheck, Package, CreditCard, Droplets, Calendar,
+  Building2, UserCheck, Package, CreditCard, Droplets, Calendar, Shield,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -77,6 +77,10 @@ export default function Layout({ children }) {
         </nav>
 
         <div className="p-4 border-t border-blue-800">
+          <Link to="/privacidade" onClick={() => setSidebarAberta(false)}
+            className="flex items-center gap-2 text-blue-300 hover:text-white text-sm mb-3">
+            <Shield size={16} /> LGPD / Privacidade
+          </Link>
           <div className="flex items-center gap-3 mb-3">
             {usuario?.foto_url
               ? <img src={usuario.foto_url} alt={usuario.nome} className="w-8 h-8 rounded-full" />

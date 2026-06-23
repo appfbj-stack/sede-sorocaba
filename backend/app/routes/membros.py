@@ -1,5 +1,5 @@
 import shutil
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -31,6 +31,8 @@ class MembroOut(BaseModel):
     cargo: Optional[str]
     status: str
     observacoes: Optional[str]
+    consentimento_lgpd: bool = False
+    anonimizado_em: Optional[str] = None
     model_config = {"from_attributes": True}
 
 class MembroLista(BaseModel):
@@ -114,6 +116,7 @@ def criar(
     endereco: str = Form(None), estado_civil: str = Form(None), data_conversao: str = Form(None),
     data_batismo: str = Form(None), cargo: str = Form(None), status: str = Form("ativo"),
     observacoes: str = Form(None), congregacao_id: str = Form(None), foto: UploadFile = File(None),
+    consentimento_lgpd: bool = Form(False),
     db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user),
     cong_filtro: Optional[str] = Depends(congregacao_filter),
 ):
@@ -126,6 +129,8 @@ def criar(
         whatsapp=whatsapp, endereco=endereco, estado_civil=estado_civil,
         data_conversao=parse_date(data_conversao), data_batismo=parse_date(data_batismo),
         cargo=cargo, status=status, observacoes=observacoes,
+        consentimento_lgpd=consentimento_lgpd,
+        data_consentimento=datetime.now(timezone.utc) if consentimento_lgpd else None,
     )
     db.add(membro); db.commit(); db.refresh(membro)
     return membro
@@ -176,3 +181,63 @@ def remover(membro_id: str, db: Session = Depends(get_db), cu: Usuario = Depends
         raise HTTPException(status_code=403, detail="Acesso negado")
     db.delete(membro); db.commit()
     return {"ok": True}
+
+@router.get("/{membro_id}/exportar-dados")
+def exportar_dados(membro_id: str, db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user),
+                   cong_filtro: Optional[str] = Depends(congregacao_filter)):
+    m = db.query(Membro).filter(Membro.id == membro_id, Membro.tenant_id == cu.tenant_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="Não encontrado")
+    if cong_filtro and m.congregacao_id != cong_filtro:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return {
+        "exportado_em": datetime.now(timezone.utc).isoformat(),
+        "dados_pessoais": {
+            "nome": m.nome,
+            "cpf": m.cpf,
+            "rg": m.rg,
+            "data_nascimento": str(m.data_nascimento) if m.data_nascimento else None,
+            "telefone": m.telefone,
+            "whatsapp": m.whatsapp,
+            "endereco": m.endereco,
+            "estado_civil": m.estado_civil,
+            "foto_url": m.foto_url,
+        },
+        "dados_religiosos": {
+            "data_conversao": str(m.data_conversao) if m.data_conversao else None,
+            "data_batismo": str(m.data_batismo) if m.data_batismo else None,
+            "cargo": m.cargo,
+            "status": m.status,
+        },
+        "consentimento_lgpd": m.consentimento_lgpd,
+        "data_consentimento": str(m.data_consentimento) if m.data_consentimento else None,
+        "criado_em": str(m.criado_em),
+        "atualizado_em": str(m.atualizado_em),
+    }
+
+@router.post("/{membro_id}/anonimizar")
+def anonimizar(membro_id: str, db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user),
+               cong_filtro: Optional[str] = Depends(congregacao_filter)):
+    m = db.query(Membro).filter(Membro.id == membro_id, Membro.tenant_id == cu.tenant_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="Não encontrado")
+    if cong_filtro and m.congregacao_id != cong_filtro:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    if m.anonimizado_em:
+        raise HTTPException(status_code=400, detail="Dados já anonimizados")
+    m.nome = "[Anonimizado]"
+    m.cpf = None
+    m.rg = None
+    m.data_nascimento = None
+    m.telefone = None
+    m.whatsapp = None
+    m.endereco = None
+    m.estado_civil = None
+    m.foto_url = None
+    m.data_conversao = None
+    m.data_batismo = None
+    m.observacoes = None
+    m.anonimizado_em = datetime.now(timezone.utc)
+    m.consentimento_lgpd = False
+    db.commit(); db.refresh(m)
+    return {"ok": True, "mensagem": "Dados pessoais anonimizados conforme LGPD (Art. 16)"}

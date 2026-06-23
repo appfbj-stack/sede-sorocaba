@@ -21,6 +21,7 @@ import Patrimonio from './pages/patrimonio/Patrimonio';
 import Carteirinhas from './pages/carteirinhas/Carteirinhas';
 import Batismos from './pages/batismos/Batismos';
 import Agenda from './pages/agenda/Agenda';
+import Privacidade from './pages/privacidade/Privacidade';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
           <Route path="/redefinir-senha" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<Callback />} />
+          <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/acesso-negado" element={
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
               <div className="bg-white rounded-2xl p-8 text-center shadow max-w-md">

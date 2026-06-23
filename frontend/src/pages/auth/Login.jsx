@@ -87,6 +87,10 @@ export default function Login() {
           </svg>
           Entrar com Google
         </button>
+
+        <div className="mt-6 text-center">
+          <Link to="/privacidade" className="text-xs text-gray-400 hover:text-blue-600">Política de Privacidade — LGPD</Link>
+        </div>
       </div>
     </div>
   );

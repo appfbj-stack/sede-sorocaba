@@ -130,6 +130,9 @@ class Membro(Base):
     cargo: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="ativo", index=True)  # ativo | inativo | transferido | falecido
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    consentimento_lgpd: Mapped[bool] = mapped_column(Boolean, default=False)
+    data_consentimento: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    anonimizado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
