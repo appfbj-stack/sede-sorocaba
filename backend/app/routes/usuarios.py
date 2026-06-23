@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.deps import log_activity, require_admin
-from app.models import PERFIS, Usuario
+from app.models import PERFIS, Congregacao, Usuario
 from app.utils import new_id
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"], dependencies=[Depends(require_admin)])
@@ -15,11 +15,13 @@ class UsuarioIn(BaseModel):
     nome: str
     perfil: str = "cliente"
     senha: Optional[str] = None
+    congregacao_id: Optional[str] = None
 
 class UsuarioUpdate(BaseModel):
     nome: str
     perfil: str
     ativo: bool = True
+    congregacao_id: Optional[str] = None
 
 class UsuarioOut(BaseModel):
     id: str
@@ -28,11 +30,34 @@ class UsuarioOut(BaseModel):
     perfil: str
     foto_url: Optional[str]
     ativo: bool
+    congregacao_id: Optional[str]
+    congregacao_nome: Optional[str] = None
     model_config = {"from_attributes": True}
+
+def _com_congregacao_nome(db: Session, usuario: Usuario) -> Usuario:
+    if usuario.congregacao_id:
+        cong = db.query(Congregacao).filter(Congregacao.id == usuario.congregacao_id).first()
+        usuario.congregacao_nome = cong.nome if cong else None
+    else:
+        usuario.congregacao_nome = None
+    return usuario
+
+def _validar_congregacao(db: Session, tenant_id: int, perfil: str, congregacao_id: Optional[str]) -> Optional[str]:
+    """Cliente deve estar vinculado a uma congregação do próprio tenant, para que a
+    separação de dados (congregacao_filter) funcione. Master/admin não ficam vinculados."""
+    if perfil != "cliente":
+        return None
+    if not congregacao_id:
+        raise HTTPException(status_code=400, detail="Usuário cliente precisa estar vinculado a uma congregação")
+    cong = db.query(Congregacao).filter(Congregacao.id == congregacao_id, Congregacao.tenant_id == tenant_id).first()
+    if not cong:
+        raise HTTPException(status_code=400, detail="Congregação inválida")
+    return congregacao_id
 
 @router.get("", response_model=list[UsuarioOut])
 def listar(db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
-    return db.query(Usuario).filter(Usuario.tenant_id == cu.tenant_id).order_by(Usuario.nome).all()
+    usuarios = db.query(Usuario).filter(Usuario.tenant_id == cu.tenant_id).order_by(Usuario.nome).all()
+    return [_com_congregacao_nome(db, u) for u in usuarios]
 
 @router.post("", response_model=UsuarioOut, status_code=201)
 def criar(payload: UsuarioIn, request: Request, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
@@ -42,17 +67,18 @@ def criar(payload: UsuarioIn, request: Request, db: Session = Depends(get_db), c
         raise HTTPException(status_code=403, detail="Apenas master pode criar outro master")
     if db.query(Usuario).filter(Usuario.email == payload.email).first():
         raise HTTPException(status_code=409, detail="E-mail já cadastrado")
+    congregacao_id = _validar_congregacao(db, cu.tenant_id, payload.perfil, payload.congregacao_id)
 
     usuario = Usuario(
         id=new_id(), tenant_id=cu.tenant_id, email=payload.email, nome=payload.nome,
-        perfil=payload.perfil, ativo=True,
+        perfil=payload.perfil, ativo=True, congregacao_id=congregacao_id,
         senha_hash=hash_password(payload.senha) if payload.senha else None,
     )
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
     log_activity(db, cu.tenant_id, cu.id, "usuario.criar", f"Criou usuário {usuario.email}", request)
-    return usuario
+    return _com_congregacao_nome(db, usuario)
 
 @router.put("/{usuario_id}", response_model=UsuarioOut)
 def atualizar(usuario_id: str, payload: UsuarioUpdate, request: Request,
@@ -64,14 +90,16 @@ def atualizar(usuario_id: str, payload: UsuarioUpdate, request: Request,
         raise HTTPException(status_code=400, detail="Perfil inválido")
     if payload.perfil == "master" and cu.perfil != "master":
         raise HTTPException(status_code=403, detail="Apenas master pode promover a master")
+    congregacao_id = _validar_congregacao(db, cu.tenant_id, payload.perfil, payload.congregacao_id)
 
     usuario.nome = payload.nome
     usuario.perfil = payload.perfil
     usuario.ativo = payload.ativo
+    usuario.congregacao_id = congregacao_id
     db.commit()
     db.refresh(usuario)
     log_activity(db, cu.tenant_id, cu.id, "usuario.atualizar", f"Atualizou usuário {usuario.email}", request)
-    return usuario
+    return _com_congregacao_nome(db, usuario)
 
 @router.delete("/{usuario_id}")
 def remover(usuario_id: str, request: Request, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):

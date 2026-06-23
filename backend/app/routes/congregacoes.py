@@ -1,9 +1,9 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.deps import congregacao_filter, get_current_user, require_admin
+from app.deps import congregacao_filter, get_current_user, log_activity, require_admin
 from app.models import Congregacao, Usuario
 from app.utils import new_id
 
@@ -43,25 +43,30 @@ def obter(congregacao_id: str, db: Session = Depends(get_db), cu: Usuario = Depe
     return cong
 
 @router.post("", response_model=CongregacaoOut, status_code=201)
-def criar(payload: CongregacaoIn, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
+def criar(payload: CongregacaoIn, request: Request, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
     cong = Congregacao(id=new_id(), tenant_id=cu.tenant_id, **payload.model_dump())
     db.add(cong); db.commit(); db.refresh(cong)
+    log_activity(db, cu.tenant_id, cu.id, "congregacao.criar", f"Criou congregação {cong.nome}", request)
     return cong
 
 @router.put("/{congregacao_id}", response_model=CongregacaoOut)
-def atualizar(congregacao_id: str, payload: CongregacaoIn, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
+def atualizar(congregacao_id: str, payload: CongregacaoIn, request: Request,
+              db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
     cong = db.query(Congregacao).filter(Congregacao.id == congregacao_id, Congregacao.tenant_id == cu.tenant_id).first()
     if not cong:
         raise HTTPException(status_code=404, detail="Não encontrada")
     for field, value in payload.model_dump().items():
         setattr(cong, field, value)
     db.commit(); db.refresh(cong)
+    log_activity(db, cu.tenant_id, cu.id, "congregacao.atualizar", f"Atualizou congregação {cong.nome}", request)
     return cong
 
 @router.delete("/{congregacao_id}")
-def remover(congregacao_id: str, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
+def remover(congregacao_id: str, request: Request, db: Session = Depends(get_db), cu: Usuario = Depends(require_admin)):
     cong = db.query(Congregacao).filter(Congregacao.id == congregacao_id, Congregacao.tenant_id == cu.tenant_id).first()
     if not cong:
         raise HTTPException(status_code=404, detail="Não encontrada")
+    nome = cong.nome
     db.delete(cong); db.commit()
+    log_activity(db, cu.tenant_id, cu.id, "congregacao.remover", f"Removeu congregação {nome}", request)
     return {"ok": True}

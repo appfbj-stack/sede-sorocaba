@@ -1,7 +1,15 @@
+def _criar_congregacao(client, master_token, nome="Congregação Teste"):
+    headers = {"Authorization": f"Bearer {master_token}"}
+    res = client.post("/api/congregacoes", json={"nome": nome}, headers=headers)
+    assert res.status_code == 201, res.text
+    return res.json()
+
 def _criar_usuario_cliente(client, master_token):
     headers = {"Authorization": f"Bearer {master_token}"}
+    congregacao = _criar_congregacao(client, master_token)
     res = client.post("/api/usuarios", json={
-        "email": "cliente@teste.com", "nome": "Cliente Teste", "perfil": "cliente", "senha": "senha-cliente-123",
+        "email": "cliente@teste.com", "nome": "Cliente Teste", "perfil": "cliente",
+        "senha": "senha-cliente-123", "congregacao_id": congregacao["id"],
     }, headers=headers)
     assert res.status_code == 201, res.text
     return res.json()

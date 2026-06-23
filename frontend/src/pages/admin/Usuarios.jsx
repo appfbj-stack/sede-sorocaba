@@ -13,14 +13,19 @@ export default function Usuarios() {
     queryFn: () => api.get('/usuarios').then((r) => r.data),
   });
 
-  const [form, setForm] = useState({ nome: '', email: '', senha: '', perfil: 'cliente' });
+  const { data: congregacoes } = useQuery({
+    queryKey: ['congregacoes'],
+    queryFn: () => api.get('/congregacoes').then((r) => r.data),
+  });
+
+  const [form, setForm] = useState({ nome: '', email: '', senha: '', perfil: 'cliente', congregacao_id: '' });
   const [erro, setErro] = useState('');
 
   const criar = useMutation({
     mutationFn: (payload) => api.post('/usuarios', payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['usuarios'] });
-      setForm({ nome: '', email: '', senha: '', perfil: 'cliente' });
+      setForm({ nome: '', email: '', senha: '', perfil: 'cliente', congregacao_id: '' });
       setErro('');
     },
     onError: (err) => setErro(err.response?.data?.detail || 'Erro ao criar usuário'),
@@ -37,7 +42,7 @@ export default function Usuarios() {
 
       <form
         onSubmit={(e) => { e.preventDefault(); criar.mutate(form); }}
-        className="bg-white rounded-xl border p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end"
+        className="bg-white rounded-xl border p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-end"
       >
         <input required placeholder="Nome" value={form.nome}
                onChange={(e) => setForm({ ...form, nome: e.target.value })}
@@ -48,14 +53,22 @@ export default function Usuarios() {
         <input type="password" placeholder="Senha (opcional p/ login Google)" value={form.senha}
                onChange={(e) => setForm({ ...form, senha: e.target.value })}
                className="border rounded-lg px-3 py-2 md:col-span-1" />
-        <select value={form.perfil} onChange={(e) => setForm({ ...form, perfil: e.target.value })}
+        <select value={form.perfil}
+                onChange={(e) => setForm({ ...form, perfil: e.target.value, congregacao_id: e.target.value === 'cliente' ? form.congregacao_id : '' })}
                 className="border rounded-lg px-3 py-2 md:col-span-1">
           {PERFIL_OPCOES.map((p) => <option key={p} value={p}>{PERFIS[p].label}</option>)}
         </select>
+        {form.perfil === 'cliente' && (
+          <select required value={form.congregacao_id} onChange={(e) => setForm({ ...form, congregacao_id: e.target.value })}
+                  className="border rounded-lg px-3 py-2 md:col-span-1">
+            <option value="">Congregação...</option>
+            {congregacoes?.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        )}
         <button type="submit" className="bg-blue-900 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 md:col-span-1">
           <Plus size={16} /> Adicionar
         </button>
-        {erro && <p className="text-sm text-red-600 md:col-span-5">{erro}</p>}
+        {erro && <p className="text-sm text-red-600 md:col-span-6">{erro}</p>}
       </form>
 
       <div className="bg-white rounded-xl border overflow-hidden">
@@ -65,12 +78,13 @@ export default function Usuarios() {
               <th className="text-left px-4 py-2">Nome</th>
               <th className="text-left px-4 py-2">E-mail</th>
               <th className="text-left px-4 py-2">Perfil</th>
+              <th className="text-left px-4 py-2">Congregação</th>
               <th className="text-left px-4 py-2">Status</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td className="px-4 py-3" colSpan={5}>Carregando...</td></tr>}
+            {isLoading && <tr><td className="px-4 py-3" colSpan={6}>Carregando...</td></tr>}
             {usuarios?.map((u) => (
               <tr key={u.id} className="border-t">
                 <td className="px-4 py-2">{u.nome}</td>
@@ -80,6 +94,7 @@ export default function Usuarios() {
                     {PERFIS[u.perfil]?.label ?? u.perfil}
                   </span>
                 </td>
+                <td className="px-4 py-2">{u.congregacao_nome || '—'}</td>
                 <td className="px-4 py-2">{u.ativo ? 'Ativo' : 'Inativo'}</td>
                 <td className="px-4 py-2 text-right">
                   <button onClick={() => remover.mutate(u.id)} className="text-red-600 hover:text-red-800">
