@@ -1,20 +1,23 @@
-import os
-import httpx
-from app.core.config import settings
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from app.models import Licenca
 
-async def verify_license() -> dict:
-    """Verifica se a licença do app está ativa no Kairos Admin (fail-open se indisponível)."""
-    if not settings.KAIROS_ADMIN_URL or not settings.KAIROS_CLIENT_ID:
-        return {"valid": True, "status": "unknown", "message": "Kairos Admin não configurado"}
-    url = f"{settings.KAIROS_ADMIN_URL}/api/license/verify"
-    params = {"client_id": settings.KAIROS_CLIENT_ID, "app_slug": settings.APP_SLUG}
-    auth = (
-        os.getenv("KAIROS_ADMIN_BASIC_USER"),
-        os.getenv("KAIROS_ADMIN_BASIC_PASSWORD"),
-    ) if os.getenv("KAIROS_ADMIN_BASIC_USER") else None
-    try:
-        async with httpx.AsyncClient(timeout=5.0, auth=auth) as client:
-            res = await client.get(url, params=params)
-            return res.json()
-    except Exception:
-        return {"valid": True, "status": "unknown", "message": "Kairos Admin inacessível"}
+def get_or_create_licenca(db: Session, tenant_id: int, dias_teste: int) -> Licenca:
+    licenca = db.query(Licenca).filter(Licenca.tenant_id == tenant_id).first()
+    if licenca:
+        return licenca
+    from app.models import nova_validade_teste
+    licenca = Licenca(tenant_id=tenant_id, plano="trial", status="teste",
+                       data_validade=nova_validade_teste(dias_teste))
+    db.add(licenca)
+    db.commit()
+    db.refresh(licenca)
+    return licenca
+
+def sincronizar_status(db: Session, licenca: Licenca) -> Licenca:
+    """Expira automaticamente a licença local quando a data de validade passou."""
+    if licenca.status in ("ativo", "teste") and licenca.expirada():
+        licenca.status = "expirado"
+        db.commit()
+        db.refresh(licenca)
+    return licenca

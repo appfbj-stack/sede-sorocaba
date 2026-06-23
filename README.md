@@ -1,52 +1,64 @@
-# Kairos Sede Sorocaba
+# Kairos Base
 
-App **Kairos Pro** de gestão eclesiástica para a OBPC Sorocaba Sede:
-membros, obreiros, carteirinhas, patrimônio, batismos e agenda das
-congregações, com login via Google e licenciamento integrado ao Kairos
-Admin.
+Base padrão (template) para criar novos apps Kairós. Contém apenas os
+módulos centrais que toda aplicação precisa — autenticação, painel
+administrativo, licenciamento e segurança — sem nenhuma regra de negócio
+específica. Para criar um novo app (Kairós Igreja, Kairós Barbearia,
+Kairós Energia Solar, etc.), clone este repositório e adicione os módulos
+específicos do novo app sem alterar o núcleo.
 
-Migrado do app original [sede-sorocaba](https://github.com/appfbj-stack/sede-sorocaba)
-(Node/Express/SQLite) para o `docs/TEMPLATE_PRO.md` do ecossistema Kairos:
-FastAPI + PostgreSQL no backend, Vite + React + Tailwind no frontend
-(reaproveitado quase sem alterações), multi-tenant (`Tenant` = igreja
-cliente, `Congregacao` = sub-unidade dentro do tenant), JWT e verificação
-de licença via Kairos Admin.
+## Princípios
 
-## Autenticação
+- **Independência total**: cada app clonado a partir desta base tem seu
+  próprio repositório, seu próprio banco de dados, seu próprio deploy no
+  Dokploy e suas próprias variáveis de ambiente. Não há acoplamento entre
+  apps.
+- **Licenciamento autocontido**: cada instância tem sua própria licença
+  (`status`: `teste` / `ativo` / `suspenso` / `expirado`), sem dependência
+  de um serviço externo.
+- **Zero dados de negócio**: o banco desta base só tem as tabelas
+  centrais (tenant, usuários, sessões, licença, logs). Nenhuma tabela ou
+  regra específica de um app fica aqui.
 
-Login exclusivamente via **Google OAuth2** — não há cadastro de senha.
-O backend troca o `code` do Google por um perfil (`email`, `nome`, `foto`),
-procura um `Usuario` já cadastrado com esse e-mail e, se existir e estiver
-ativo, emite um JWT próprio do Kairos. Não há autocadastro: e-mails não
-cadastrados são redirecionados para `/acesso-negado`.
+## Arquitetura
 
-## Perfis de usuário
+```
+backend/    FastAPI + SQLAlchemy + JWT (Python 3.11)
+frontend/   React 19 + Vite + Tailwind v4 (PWA)
+```
 
-- **sede** — acesso total, a todas as congregações do tenant.
-- **pastor** — acesso restrito à própria congregação (`congregacao_id`).
+### Módulos centrais (não remover ao clonar)
 
-## O que está implementado (Fase 1)
+| Módulo | Descrição |
+|---|---|
+| Autenticação | Login por e-mail/senha (padrão) e Google OAuth2 (opcional), recuperação de senha por e-mail, logout com revogação de sessão (`Sessao`), `/auth/me` |
+| Administração | Dashboard, gestão de usuários, configurações do tenant, logs de atividade — restrito a `admin`/`master` |
+| Licenciamento | Período de teste automático, ativação/bloqueio, expiração, status — restrito a `master` |
+| Segurança | Rotas protegidas por JWT + verificação de sessão ativa, controle de papéis (`master`/`admin`/`cliente`), logs de auditoria, separação entre área do cliente e área master |
+| Banco de dados | Migrações organizadas, schema isolado por app (`DATABASE_SCHEMA`), sem dados de exemplo de negócio |
 
-- Login Google + JWT multi-tenant (`/api/auth/google`, `/api/auth/me`)
-- CRUD de usuários (`/api/usuarios`) — restrito a `sede`
-- Congregações (`/api/congregacoes`)
-- Membros (`/api/membros`), com foto, aniversariantes e paginação
-- Obreiros (`/api/obreiros`), com categoria e credencial
-- Carteirinhas (`/api/carteirinhas`), emissão com QR code e expiração
-  automática da carteirinha anterior
-- Patrimônio (`/api/patrimonio`), com foto e desativação (soft-delete)
-- Agenda (`/api/agenda`) — eventos da congregação
-- Batismos (`/api/batismos`), com lista de pendentes
-- Dashboard com estatísticas agregadas (`/api/dashboard`)
-- Verificação de licença Kairos Admin no startup (fail-open se indisponível)
+### Modelo de dados
 
-## Fora do escopo desta versão (Fase 2)
+- `Tenant` — a empresa/cliente que usa esta instância do app (uma linha
+  por deploy; isso não é multi-tenant dentro do mesmo banco, é um app por
+  cliente).
+- `Usuario` — `perfil` em `master` (controle total do sistema e da
+  licença), `admin` (gestão operacional do tenant) ou `cliente` (área do
+  cliente).
+- `Sessao` — JWT ativos, permite logout real (revogação) mesmo com JWT
+  stateless.
+- `PasswordResetToken` — tokens de recuperação de senha, hash + expiração
+  de 1h, uso único.
+- `Licenca` — um registro por tenant, com status e validade.
+- `LogAtividade` — trilha de auditoria das ações administrativas.
 
-- Sincronização com Google Sheets
-- OCR de documentos / importação em massa
-- Assistente de IA
-- Notificações por e-mail e tarefas agendadas (cron)
-- Sincronização de eventos com Google Calendar
+### Papéis e áreas
+
+- **Área do cliente** (`/dashboard`, `/perfil`): qualquer usuário
+  autenticado.
+- **Área administrativa** (`/admin/*`): `admin` e `master`.
+- **Área master** (`/master/*`, oculta para clientes): apenas `master` —
+  gestão de licença e do sistema.
 
 ## Desenvolvimento local
 
@@ -54,13 +66,17 @@ cadastrados são redirecionados para `/acesso-negado`.
 # Backend
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-ADMIN_EMAIL=admin@obpcsorocaba.com.br uvicorn app.main:app --reload
+pip install -r requirements-dev.txt
+ADMIN_EMAIL=admin@exemplo.com ADMIN_PASSWORD=trocar-senha uvicorn app.main:app --reload
+
+# Testes
+pytest
 
 # Frontend (em outro terminal)
 cd frontend
 npm install
 npm run dev
+npm run lint
 ```
 
 O frontend usa URLs relativas (`/api/...`) e, em desenvolvimento, o Vite
@@ -68,52 +84,45 @@ faz proxy de `/api` e `/uploads` para `http://localhost:8000` (ver
 `vite.config.js`). Em produção, é o Nginx do container do frontend que
 faz esse proxy para o serviço `backend` (ver `nginx.conf`).
 
-## Deploy na VPS (Dokploy)
+## Deploy (Dokploy)
 
-1. Crie o repositório no GitHub e suba este diretório
-   (`kairos-sede-sorocaba/`) como raiz do repositório, ou aponte o Dokploy
-   para este monorepo com **Build Path** = `kairos-sede-sorocaba`.
-2. No Kairos Admin (**Aplicativos**), registre o app:
-   - Nome: `Kairos Sede Sorocaba`
-   - Slug: `sede-sorocaba`
-   - Plano: **Pro**
-3. Em **Clientes**, crie (ou selecione) o cliente que vai usar o app e, em
-   **Licenças**, crie uma licença para esse cliente + app. Copie o
-   `client_id` (UUID) gerado.
-4. No Dokploy, crie um novo projeto do tipo Docker Compose apontando para
-   este repositório/diretório, com **Compose Path** = `docker-compose.yml`.
-5. Configure as variáveis de ambiente (aba Environment), usando
-   `.env.example` como referência:
-   ```
-   POSTGRES_PASSWORD=...
-   SECRET_KEY=...
-   KAIROS_ADMIN_URL=https://api.admin.fbautomacao.space
-   KAIROS_CLIENT_ID=<uuid copiado no passo 3>
-   ADMIN_EMAIL=admin@obpcsorocaba.com.br
-   GOOGLE_CLIENT_ID=...
-   GOOGLE_CLIENT_SECRET=...
-   GOOGLE_REDIRECT_URI=https://api.sede.fbautomacao.space/api/auth/google/callback
-   FRONTEND_URL=https://sede.fbautomacao.space
-   ```
-6. No [Google Cloud Console](https://console.cloud.google.com/), nas
-   credenciais OAuth2 do app, adicione exatamente essa mesma URI de
-   `GOOGLE_REDIRECT_URI` em "URIs de redirecionamento autorizados".
-7. Confirme que a rede externa `kairos_network` existe na VPS
-   (`docker network create kairos_network` se ainda não existir).
-8. Deploy. As portas reservadas para este app são `8010` (backend) e
-   `3020` (frontend) — ver `docs/APPS_REGISTRADOS.md` na raiz do
-   ecossistema antes de mudar, para não colidir com outro app já
-   registrado.
-9. Na aba **Domains** do recurso (Dokploy), registre os dois domínios
-   apontando para os serviços do compose:
-   - `sede.fbautomacao.space` → serviço `frontend`, porta `80`
-   - `api.sede.fbautomacao.space` → serviço `backend`, porta `8000`
-10. Teste o login em `https://sede.fbautomacao.space` com uma conta Google
-    cujo e-mail seja igual ao `ADMIN_EMAIL` configurado, e confirme no log
-    do backend que a licença foi validada (`✅ Licença Kairos: ...`).
+Cada app clonado desta base é um deploy **independente** no Dokploy, com
+seu próprio banco Postgres (serviço `postgres` no `docker-compose.yml`),
+suas próprias variáveis de ambiente e seus próprios domínios.
+
+1. Crie um novo repositório a partir desta base (clone, não fork
+   compartilhado) para cada novo app.
+2. No Dokploy, crie um projeto Docker Compose apontando para o novo
+   repositório, com **Compose Path** = `docker-compose.yml`.
+3. Configure as variáveis de ambiente (aba Environment) usando
+   `.env.example` como referência. Cada app define seu próprio
+   `POSTGRES_PASSWORD`, `SECRET_KEY`, `DATABASE_SCHEMA`, `TENANT_NOME`,
+   `TENANT_SLUG`, `ADMIN_EMAIL`/`ADMIN_PASSWORD` e, se for usar login
+   Google, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`.
+4. Ajuste `BACKEND_PORT`/`FRONTEND_PORT` se for publicar portas
+   diretamente (em geral o Dokploy expõe via domínio/Traefik e isso não é
+   necessário).
+5. Deploy. Confirme no log do backend a criação do tenant, do usuário
+   master e da licença de teste (`✅ Licença: status=teste ...`).
+6. Na aba **Domains**, registre os domínios apontando para os serviços do
+   compose: domínio principal → `frontend` porta `80`; `api.<domínio>` →
+   `backend` porta `8000` (se a API for exposta em subdomínio separado).
+
+## Como criar um novo app a partir desta base
+
+1. Clone este repositório para um novo repositório (um por app).
+2. Atualize `APP_NAME`/`APP_SLUG` em `backend/app/core/config.py` e o
+   `name`/título em `frontend/package.json` e `frontend/index.html`.
+3. Adicione os módulos de negócio do novo app (models, rotas, páginas)
+   sem alterar os módulos centrais listados acima.
+4. Gere migrações/tabelas específicas do novo app — nunca misture com as
+   tabelas centrais.
+5. Rode os testes do backend (`pytest`) e o lint/build do frontend
+   (`npm run lint`, `npm run build`) antes de cada deploy.
 
 ## Uploads
 
-Fotos de membros e patrimônio são salvas em `/app/uploads` dentro do
-container do backend e servidas em `/uploads/...`. O volume `uploads_data`
-no `docker-compose.yml` garante que essas fotos persistam entre deploys.
+Arquivos enviados pelos módulos de negócio são salvos em `/app/uploads`
+dentro do container do backend e servidos em `/uploads/...`. O volume
+`uploads_data` no `docker-compose.yml` garante que persistam entre
+deploys.

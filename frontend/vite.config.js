@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -12,9 +15,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
-        name: 'Kairos OBPC Sorocaba',
+        name: 'Kairos Base',
         short_name: 'Kairos',
-        description: 'Plataforma de Gestão Eclesiástica OBPC Sorocaba Sede',
+        description: 'Base padrão da plataforma Kairos',
         theme_color: '#1e40af',
         background_color: '#ffffff',
         display: 'standalone',
