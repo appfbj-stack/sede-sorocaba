@@ -3,60 +3,60 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth';
 import { cn } from '../../lib/utils';
 import {
-  LayoutDashboard, Users, UserCheck, Building2, Package,
-  Calendar, LogOut,
-  Menu, X, CreditCard
+  LayoutDashboard, User, Users, Settings, FileClock,
+  ShieldCheck, Activity, LogOut, Menu, X,
+  Building2, UserCheck, Package, CreditCard, Droplets, Calendar,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/congregacoes', label: 'Congregações', icon: Building2, somenteAdmin: true },
   { href: '/membros', label: 'Membros', icon: Users },
   { href: '/obreiros', label: 'Obreiros', icon: UserCheck },
   { href: '/carteirinhas', label: 'Carteirinhas', icon: CreditCard },
-  { href: '/congregacoes', label: 'Congregações', icon: Building2, somentesSede: true },
+  { href: '/batismos', label: 'Batismos', icon: Droplets },
   { href: '/patrimonio', label: 'Patrimônio', icon: Package },
   { href: '/agenda', label: 'Agenda', icon: Calendar },
+  { href: '/perfil', label: 'Meu perfil', icon: User },
+  { href: '/admin/usuarios', label: 'Usuários', icon: Users, somenteAdmin: true },
+  { href: '/admin/configuracoes', label: 'Configurações', icon: Settings, somenteAdmin: true },
+  { href: '/admin/logs', label: 'Logs', icon: FileClock, somenteAdmin: true },
+  { href: '/master/licenca', label: 'Licença', icon: ShieldCheck, somenteMaster: true },
+  { href: '/master/sistema', label: 'Sistema', icon: Activity, somenteMaster: true },
 ];
 
 export default function Layout({ children }) {
   const [sidebarAberta, setSidebarAberta] = useState(false);
-  const { usuario, logout, isSede } = useAuthStore();
+  const { usuario, logout, isAdmin, isMaster } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const itens = NAV_ITEMS.filter(i => !i.somentesSede || isSede());
+  const itens = NAV_ITEMS.filter((i) => (!i.somenteAdmin || isAdmin()) && (!i.somenteMaster || isMaster()));
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Overlay mobile */}
       {sidebarAberta && (
         <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setSidebarAberta(false)} />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         'fixed top-0 left-0 h-full w-64 bg-blue-900 text-white z-30 flex flex-col transition-transform duration-300',
         sidebarAberta ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
-        {/* Logo */}
         <div className="p-6 border-b border-blue-800">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-white">⛪ Kairos</h1>
-              <p className="text-xs text-blue-300 mt-0.5">OBPC Sorocaba Sede</p>
-            </div>
+            <h1 className="text-xl font-bold text-white">⏱️ Kairos</h1>
             <button className="lg:hidden text-white" onClick={() => setSidebarAberta(false)}>
               <X size={20} />
             </button>
           </div>
         </div>
 
-        {/* Navegação */}
         <nav className="flex-1 overflow-y-auto py-4">
           {itens.map(({ href, label, icon: Icon }) => (
             <Link
@@ -76,7 +76,6 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* Usuário */}
         <div className="p-4 border-t border-blue-800">
           <div className="flex items-center gap-3 mb-3">
             {usuario?.foto_url
@@ -94,14 +93,12 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Conteúdo principal */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        {/* Header mobile */}
         <header className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10">
           <button onClick={() => setSidebarAberta(true)} className="text-gray-600">
             <Menu size={24} />
           </button>
-          <h1 className="font-bold text-blue-900">⛪ Kairos</h1>
+          <h1 className="font-bold text-blue-900">⏱️ Kairos</h1>
           <div className="w-8" />
         </header>
 

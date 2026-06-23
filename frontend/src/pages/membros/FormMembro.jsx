@@ -22,7 +22,7 @@ const CAMPOS = [
 
 export default function FormMembro({ membro, onFechar }) {
   const qc = useQueryClient();
-  const { isSede } = useAuthStore();
+  const { isAdmin } = useAuthStore();
   const [form, setForm] = useState({
     nome: '', cpf: '', rg: '', data_nascimento: '', telefone: '', whatsapp: '',
     endereco: '', estado_civil: '', data_conversao: '', data_batismo: '',
@@ -35,7 +35,7 @@ export default function FormMembro({ membro, onFechar }) {
   const { data: congregacoes } = useQuery({
     queryKey: ['congregacoes'],
     queryFn: () => api.get('/congregacoes').then(r => r.data),
-    enabled: isSede(),
+    enabled: isAdmin(),
   });
 
   const salvar = useMutation({
@@ -65,7 +65,6 @@ export default function FormMembro({ membro, onFechar }) {
         </div>
 
         <div className="p-4 space-y-4">
-          {/* Foto */}
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
               {fotoPreview
@@ -79,7 +78,7 @@ export default function FormMembro({ membro, onFechar }) {
             </label>
           </div>
 
-          {isSede() && congregacoes && (
+          {isAdmin() && congregacoes && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Congregação *</label>
               <select value={form.congregacao_id} onChange={e => setForm(f => ({ ...f, congregacao_id: e.target.value }))}

@@ -29,8 +29,8 @@ export function calcularIdade(dataNasc) {
   const hoje = new Date();
   const nasc = new Date(dataNasc);
   let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  const mes = hoje.getMonth() - nasc.getMonth();
+  if (mes < 0 || (mes === 0 && hoje.getDate() < nasc.getDate())) idade--;
   return idade;
 }
 
@@ -65,3 +65,16 @@ export const CATEGORIAS_PATRIMONIO = [
   { value: 'veiculos', label: 'Veículos' },
   { value: 'projetores', label: 'Projetores' },
 ];
+
+export const PERFIS = {
+  master: { label: 'Master', color: 'bg-purple-100 text-purple-800' },
+  admin: { label: 'Administrador', color: 'bg-blue-100 text-blue-800' },
+  cliente: { label: 'Cliente', color: 'bg-gray-100 text-gray-800' },
+};
+
+export const LICENCA_STATUS = {
+  teste: { label: 'Teste', color: 'bg-yellow-100 text-yellow-800' },
+  ativo: { label: 'Ativo', color: 'bg-green-100 text-green-800' },
+  suspenso: { label: 'Suspenso', color: 'bg-red-100 text-red-800' },
+  expirado: { label: 'Expirado', color: 'bg-gray-100 text-gray-800' },
+};

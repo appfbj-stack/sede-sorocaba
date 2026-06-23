@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
+import { useAuthStore } from '../../stores/auth';
 import { formatarData } from '../../lib/utils';
 import { CreditCard, Plus, Trash2, AlertTriangle, CheckCircle, QrCode } from 'lucide-react';
 
@@ -58,14 +59,13 @@ function ModalEmitir({ onFechar }) {
   );
 }
 
-function CarteirinhaCard({ c, onDeletar }) {
+function CarteirinhaCard({ c, marca, onDeletar }) {
   const vencida = c.status === 'vencida' || (c.validade && new Date(c.validade) < new Date());
 
   return (
     <div className={`bg-white rounded-xl border overflow-hidden ${vencida ? 'border-red-200' : 'border-gray-200'}`}>
-      {/* Carteirinha visual */}
       <div className={`p-4 ${vencida ? 'bg-red-600' : 'bg-blue-800'} text-white`}>
-        <p className="text-xs opacity-70 font-medium uppercase tracking-wider">OBPC Sorocaba</p>
+        <p className="text-xs opacity-70 font-medium uppercase tracking-wider">{marca}</p>
         <div className="flex items-center gap-3 mt-2">
           {c.foto_url
             ? <img src={c.foto_url} alt={c.nome} className="w-12 h-12 rounded-full object-cover border-2 border-white/30" />
@@ -102,6 +102,8 @@ export default function Carteirinhas() {
   const [modal, setModal] = useState(false);
   const [filtro, setFiltro] = useState('');
   const qc = useQueryClient();
+  const { usuario } = useAuthStore();
+  const marca = usuario?.tenant_nome || 'Carteirinha';
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['carteirinhas', filtro],
@@ -143,7 +145,7 @@ export default function Carteirinhas() {
         <div className="text-center py-16 text-gray-400"><CreditCard size={48} className="mx-auto mb-2 opacity-30" /><p>Nenhuma carteirinha</p></div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {data.map(c => <CarteirinhaCard key={c.id} c={c} onDeletar={(id) => deletar.mutate(id)} />)}
+          {data.map(c => <CarteirinhaCard key={c.id} c={c} marca={marca} onDeletar={(id) => deletar.mutate(id)} />)}
         </div>
       )}
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import { formatarData, calcularIdade, STATUS_MEMBRO } from '../../lib/utils';
-import { Plus, Search, Filter, ChevronLeft, ChevronRight, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Edit, Trash2, User } from 'lucide-react';
 import FormMembro from './FormMembro';
 
 export default function Membros() {
@@ -42,7 +42,6 @@ export default function Membros() {
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         <div className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2 flex-1 min-w-48">
           <Search size={16} className="text-gray-400" />
@@ -65,7 +64,6 @@ export default function Membros() {
         </select>
       </div>
 
-      {/* Tabela */}
       <div className="bg-white rounded-xl border overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
@@ -78,7 +76,6 @@ export default function Membros() {
           </div>
         ) : (
           <>
-            {/* Mobile: cards */}
             <div className="lg:hidden divide-y">
               {data?.dados?.map(m => (
                 <div key={m.id} className="p-4 flex items-center gap-3">
@@ -103,7 +100,6 @@ export default function Membros() {
               ))}
             </div>
 
-            {/* Desktop: tabela */}
             <table className="hidden lg:table w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
@@ -148,7 +144,6 @@ export default function Membros() {
               </tbody>
             </table>
 
-            {/* Paginação */}
             {totalPaginas > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
                 <p className="text-sm text-gray-500">Página {page} de {totalPaginas}</p>

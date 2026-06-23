@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
-import { formatarData, formatarMoeda } from '../../lib/utils';
-import { Users, UserCheck, Building2, AlertTriangle, Calendar, Gift, TrendingUp } from 'lucide-react';
+import { formatarData, LICENCA_STATUS } from '../../lib/utils';
+import { Users, UserCheck, Building2, AlertTriangle, Calendar, Gift, TrendingUp, ShieldCheck } from 'lucide-react';
 
 function StatCard({ titulo, valor, icone: Icon, cor = 'blue', sublabel }) {
   const cores = {
@@ -25,7 +25,7 @@ function StatCard({ titulo, valor, icone: Icon, cor = 'blue', sublabel }) {
 }
 
 export default function Dashboard() {
-  const { usuario, isSede } = useAuthStore();
+  const { usuario, isAdmin } = useAuthStore();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get('/dashboard').then(r => r.data),
@@ -38,6 +38,9 @@ export default function Dashboard() {
     </div>
   );
 
+  const licenca = data?.licenca;
+  const statusInfo = licenca ? LICENCA_STATUS[licenca.status] : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -45,11 +48,25 @@ export default function Dashboard() {
           Olá, {usuario?.nome?.split(' ')[0]} 👋
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          {isSede() ? 'Visão geral de todas as congregações' : 'Visão da sua congregação'} • {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          {isAdmin() ? 'Visão geral de todas as congregações' : 'Visão da sua congregação'} • {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
-      {/* Aniversariantes hoje */}
+      {licenca && (
+        <div className="bg-white rounded-xl border p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldCheck size={22} className="text-blue-700" />
+            <div>
+              <p className="font-semibold text-gray-800">Plano {licenca.plano}</p>
+              <p className="text-xs text-gray-500">Válida até {formatarData(licenca.data_validade)}</p>
+            </div>
+          </div>
+          <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusInfo?.color}`}>
+            {statusInfo?.label}
+          </span>
+        </div>
+      )}
+
       {data?.lista_aniversariantes_hoje?.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -70,9 +87,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats principais */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {isSede() && <StatCard titulo="Congregações" valor={data?.congregacoes} icone={Building2} cor="blue" />}
+        {isAdmin() && <StatCard titulo="Congregações" valor={data?.congregacoes} icone={Building2} cor="blue" />}
         <StatCard titulo="Total Membros" valor={data?.total_membros} icone={Users} cor="blue" />
         <StatCard titulo="Membros Ativos" valor={data?.membros_ativos} icone={Users} cor="green" />
         <StatCard titulo="Membros Inativos" valor={data?.membros_inativos} icone={Users} cor="gray" />
@@ -86,7 +102,6 @@ export default function Dashboard() {
         <StatCard titulo="Aniversariantes/mês" valor={data?.aniversariantes_mes} icone={Gift} cor="yellow" />
       </div>
 
-      {/* Crescimento */}
       {data?.crescimento?.length > 0 && (
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center gap-2 mb-4">

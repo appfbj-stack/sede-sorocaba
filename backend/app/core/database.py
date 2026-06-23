@@ -1,9 +1,9 @@
-from sqlalchemy import create_engine, event, MetaData
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 import os
 
-DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA", "sede_sorocaba")
+DATABASE_SCHEMA = os.getenv("DATABASE_SCHEMA", "kairos_base")
 
 connect_args = {}
 if DATABASE_SCHEMA and not settings.DATABASE_URL.startswith("sqlite"):
@@ -15,12 +15,8 @@ engine = create_engine(
     connect_args=connect_args,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-metadata = MetaData(schema=DATABASE_SCHEMA)
+metadata = MetaData(schema=DATABASE_SCHEMA if not settings.DATABASE_URL.startswith("sqlite") else None)
 Base = declarative_base(metadata=metadata)
-
-@event.listens_for(Base.metadata, "column_reflect")
-def _reflect_schema(inspector, table, column_info):
-    pass
 
 def get_db():
     db = SessionLocal()

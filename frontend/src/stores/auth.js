@@ -9,15 +9,19 @@ export const useAuthStore = create(
       token: null,
       carregando: false,
 
+      loginComSenha: async (email, senha) => {
+        const { data } = await api.post('/auth/login', { email, senha });
+        localStorage.setItem('kairos_token', data.access_token);
+        set({ token: data.access_token, usuario: data.usuario });
+        return data.usuario;
+      },
+
       login: (token) => {
         localStorage.setItem('kairos_token', token);
         set({ token, carregando: true });
         api.get('/auth/me')
           .then(({ data }) => set({ usuario: data, carregando: false }))
-          .catch((err) => {
-            console.error('[Auth] Falha ao carregar usuário:', err.response?.status, err.message);
-            get().logout();
-          });
+          .catch(() => get().logout());
       },
 
       carregarUsuario: async () => {
@@ -33,12 +37,14 @@ export const useAuthStore = create(
         }
       },
 
-      logout: () => {
+      logout: async () => {
+        try { await api.post('/auth/logout'); } catch { /* sessão já pode estar inválida */ }
         localStorage.removeItem('kairos_token');
         set({ usuario: null, token: null });
       },
 
-      isSede: () => get().usuario?.perfil === 'sede',
+      isMaster: () => get().usuario?.perfil === 'master',
+      isAdmin: () => ['master', 'admin'].includes(get().usuario?.perfil),
     }),
     { name: 'kairos-auth', partialize: (s) => ({ token: s.token }) }
   )

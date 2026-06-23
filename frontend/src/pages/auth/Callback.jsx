@@ -2,28 +2,26 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth';
 
+function extrairToken() {
+  // Pega o token de qualquer lugar: ?token= ou #token=
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+  return params.get('token') || hashParams.get('token');
+}
+
 export default function Callback() {
   const { login } = useAuthStore();
   const navigate = useNavigate();
-  const [erro, setErro] = useState('');
+  const [token] = useState(extrairToken);
+  const erro = token ? '' : 'Token não recebido. URL: ' + window.location.href;
 
   useEffect(() => {
-    // Pega o token de qualquer lugar: ?token= ou #token=
-    const params = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-    const token = params.get('token') || hashParams.get('token');
-
-    console.log('[Callback] URL:', window.location.href);
-    console.log('[Callback] Token encontrado:', token ? 'SIM' : 'NÃO');
-
-    if (token) {
-      localStorage.setItem('kairos_token', token);
-      login(token);
-      setTimeout(() => navigate('/dashboard', { replace: true }), 500);
-    } else {
-      setErro('Token não recebido. URL: ' + window.location.href);
-    }
-  }, []);
+    if (!token) return;
+    localStorage.setItem('kairos_token', token);
+    login(token);
+    const timer = setTimeout(() => navigate('/dashboard', { replace: true }), 500);
+    return () => clearTimeout(timer);
+  }, [token, login, navigate]);
 
   if (erro) return (
     <div className="min-h-screen flex items-center justify-center p-4">

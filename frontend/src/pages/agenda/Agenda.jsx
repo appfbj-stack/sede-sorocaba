@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
-import { formatarDataHora, TIPOS_EVENTO } from '../../lib/utils';
+import { TIPOS_EVENTO } from '../../lib/utils';
 import { Calendar, Plus, Trash2, MapPin, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const CORES_TIPO = {

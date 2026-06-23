@@ -1,4 +1,3 @@
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
@@ -6,46 +5,62 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import engine, SessionLocal
-from app.models import Base, Tenant, Usuario
-from app.services.license import verify_license
+from app.core.security import hash_password
+from app.models import Base, Licenca, Tenant, Usuario
+from app.services.license import get_or_create_licenca, sincronizar_status
 from app.utils import new_id
 
 Base.metadata.create_all(bind=engine)
 
-def _seed_admin():
-    email = settings.ADMIN_EMAIL.strip()
-    if not email:
-        return
+def _seed():
     db = SessionLocal()
     try:
-        if db.query(Usuario).filter(Usuario.email == email).first():
-            return
         tenant = db.query(Tenant).first()
         if not tenant:
-            tenant = Tenant(nome="OBPC Sorocaba", slug="obpc-sorocaba", ativo=True)
-            db.add(tenant); db.flush()
-        usuario = Usuario(id=new_id(), tenant_id=tenant.id, email=email, nome="Administrador Sede",
-                           perfil="sede", ativo=True)
-        db.add(usuario); db.commit()
+            tenant = Tenant(nome=settings.TENANT_NOME, slug=settings.TENANT_SLUG, ativo=True)
+            db.add(tenant)
+            db.flush()
+
+        get_or_create_licenca(db, tenant.id, settings.LICENCA_DIAS_TESTE)
+
+        email = settings.ADMIN_EMAIL.strip()
+        if email and not db.query(Usuario).filter(Usuario.email == email).first():
+            db.add(Usuario(
+                id=new_id(), tenant_id=tenant.id, email=email, nome="Administrador",
+                perfil="master", ativo=True,
+                senha_hash=hash_password(settings.ADMIN_PASSWORD) if settings.ADMIN_PASSWORD else None,
+            ))
+            db.commit()
     finally:
         db.close()
 
-async def _check_license():
-    result = await verify_license()
-    if result.get("valid"):
-        print(f"✅ Licença Kairos: {result.get('status')} - {result.get('message', '')}")
-    else:
-        print(f"❌ Licença Kairos: {result.get('status')} - {result.get('message', '')}")
+def _log_license_status():
+    db = SessionLocal()
+    try:
+        tenant = db.query(Tenant).first()
+        if not tenant:
+            return
+        licenca = db.query(Licenca).filter(Licenca.tenant_id == tenant.id).first()
+        if not licenca:
+            return
+        licenca = sincronizar_status(db, licenca)
+        emoji = "✅" if licenca.acesso_liberado() else "❌"
+        print(f"{emoji} Licença: status={licenca.status} plano={licenca.plano} validade={licenca.data_validade}")
+    finally:
+        db.close()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _seed_admin()
-    await _check_license()
+    _seed()
+    _log_license_status()
     yield
 
-from app.routes import agenda, auth, batismos, carteirinhas, congregacoes, dashboard, membros, obreiros, patrimonio, usuarios
+from app.routes import (
+    admin, agenda, auth, batismos, carteirinhas, congregacoes, dashboard,
+    master, membros, obreiros, patrimonio, usuarios,
+)
 
-app = FastAPI(title="Kairos Sede Sorocaba API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title=f"{settings.APP_NAME} API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
@@ -61,7 +76,9 @@ app.include_router(agenda.router, prefix="/api")
 app.include_router(carteirinhas.router, prefix="/api")
 app.include_router(batismos.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(master.router, prefix="/api")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": "Kairos Sede Sorocaba API"}
+    return {"status": "ok", "app": settings.APP_NAME}

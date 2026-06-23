@@ -6,7 +6,8 @@ from sqlalchemy import extract
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.deps import congregacao_filter, get_current_user
-from app.models import Carteirinha, Congregacao, Evento, Membro, Obreiro, Patrimonio, Usuario
+from app.models import Carteirinha, Congregacao, Evento, Licenca, Membro, Obreiro, Patrimonio, Usuario
+from app.services.license import sincronizar_status
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -34,7 +35,7 @@ def stats(db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)
 
     congregacoes_count = (
         db.query(Congregacao).filter(Congregacao.tenant_id == tenant_id, Congregacao.status == "ativa").count()
-        if cu.perfil == "sede" else 1
+        if cu.perfil in ("master", "admin") else 1
     )
 
     aniversariantes_hoje_q = membros_q().filter(
@@ -54,7 +55,17 @@ def stats(db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)
     meses_ordenados = sorted(contagem_mensal)[-6:]
     crescimento = [{"mes": mes, "total": contagem_mensal[mes]} for mes in meses_ordenados]
 
+    licenca = db.query(Licenca).filter(Licenca.tenant_id == tenant_id).first()
+    if licenca:
+        licenca = sincronizar_status(db, licenca)
+
     return {
+        "usuario": {"nome": cu.nome, "email": cu.email, "perfil": cu.perfil},
+        "licenca": {
+            "plano": licenca.plano,
+            "status": licenca.status,
+            "data_validade": licenca.data_validade,
+        } if licenca else None,
         "congregacoes": congregacoes_count,
         "total_membros": membros_q().count(),
         "membros_ativos": membros_q().filter(Membro.status == "ativo").count(),
