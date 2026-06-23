@@ -5,10 +5,18 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard, User, Users, Settings, FileClock,
   ShieldCheck, Activity, LogOut, Menu, X,
+  Building2, UserCheck, Package, CreditCard, Droplets, Calendar,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/congregacoes', label: 'Congregações', icon: Building2, somenteAdmin: true },
+  { href: '/membros', label: 'Membros', icon: Users },
+  { href: '/obreiros', label: 'Obreiros', icon: UserCheck },
+  { href: '/carteirinhas', label: 'Carteirinhas', icon: CreditCard },
+  { href: '/batismos', label: 'Batismos', icon: Droplets },
+  { href: '/patrimonio', label: 'Patrimônio', icon: Package },
+  { href: '/agenda', label: 'Agenda', icon: Calendar },
   { href: '/perfil', label: 'Meu perfil', icon: User },
   { href: '/admin/usuarios', label: 'Usuários', icon: Users, somenteAdmin: true },
   { href: '/admin/configuracoes', label: 'Configurações', icon: Settings, somenteAdmin: true },

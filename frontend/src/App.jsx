@@ -14,6 +14,13 @@ import Configuracoes from './pages/admin/Configuracoes';
 import Logs from './pages/admin/Logs';
 import Licenca from './pages/master/Licenca';
 import Sistema from './pages/master/Sistema';
+import Congregacoes from './pages/congregacoes/Congregacoes';
+import Membros from './pages/membros/Membros';
+import Obreiros from './pages/obreiros/Obreiros';
+import Patrimonio from './pages/patrimonio/Patrimonio';
+import Carteirinhas from './pages/carteirinhas/Carteirinhas';
+import Batismos from './pages/batismos/Batismos';
+import Agenda from './pages/agenda/Agenda';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -64,6 +71,13 @@ export default function App() {
           } />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<RotaProtegida><Dashboard /></RotaProtegida>} />
+          <Route path="/congregacoes" element={<RotaProtegida><RotaAdmin><Congregacoes /></RotaAdmin></RotaProtegida>} />
+          <Route path="/membros" element={<RotaProtegida><Membros /></RotaProtegida>} />
+          <Route path="/obreiros" element={<RotaProtegida><Obreiros /></RotaProtegida>} />
+          <Route path="/patrimonio" element={<RotaProtegida><Patrimonio /></RotaProtegida>} />
+          <Route path="/carteirinhas" element={<RotaProtegida><Carteirinhas /></RotaProtegida>} />
+          <Route path="/batismos" element={<RotaProtegida><Batismos /></RotaProtegida>} />
+          <Route path="/agenda" element={<RotaProtegida><Agenda /></RotaProtegida>} />
           <Route path="/perfil" element={<RotaProtegida><Perfil /></RotaProtegida>} />
           <Route path="/admin/usuarios" element={<RotaProtegida><RotaAdmin><Usuarios /></RotaAdmin></RotaProtegida>} />
           <Route path="/admin/configuracoes" element={<RotaProtegida><RotaAdmin><Configuracoes /></RotaAdmin></RotaProtegida>} />

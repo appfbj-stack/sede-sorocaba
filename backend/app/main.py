@@ -55,7 +55,10 @@ async def lifespan(app: FastAPI):
     _log_license_status()
     yield
 
-from app.routes import admin, auth, dashboard, master, usuarios
+from app.routes import (
+    admin, agenda, auth, batismos, carteirinhas, congregacoes, dashboard,
+    master, membros, obreiros, patrimonio, usuarios,
+)
 
 app = FastAPI(title=f"{settings.APP_NAME} API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -65,6 +68,13 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(usuarios.router, prefix="/api")
+app.include_router(congregacoes.router, prefix="/api")
+app.include_router(membros.router, prefix="/api")
+app.include_router(obreiros.router, prefix="/api")
+app.include_router(patrimonio.router, prefix="/api")
+app.include_router(agenda.router, prefix="/api")
+app.include_router(carteirinhas.router, prefix="/api")
+app.include_router(batismos.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(master.router, prefix="/api")

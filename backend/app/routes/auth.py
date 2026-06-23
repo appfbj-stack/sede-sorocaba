@@ -21,6 +21,8 @@ class UsuarioOut(BaseModel):
     nome: str
     perfil: str
     foto_url: str | None
+    congregacao_id: str | None
+    tenant_nome: str | None = None
     model_config = {"from_attributes": True}
 
 class LoginIn(BaseModel):
@@ -37,6 +39,11 @@ class ForgotPasswordIn(BaseModel):
 class ResetPasswordIn(BaseModel):
     token: str
     nova_senha: str
+
+def _com_tenant_nome(db: Session, usuario: Usuario) -> Usuario:
+    tenant = db.query(Tenant).filter(Tenant.id == usuario.tenant_id).first()
+    usuario.tenant_nome = tenant.nome if tenant else None
+    return usuario
 
 def _emitir_sessao(db: Session, usuario: Usuario, request: Request) -> str:
     token, jti, expira_em = create_access_token({"sub": usuario.id})
@@ -57,7 +64,7 @@ def login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
 
     token = _emitir_sessao(db, usuario, request)
     log_activity(db, usuario.tenant_id, usuario.id, "login", request=request)
-    return {"access_token": token, "usuario": usuario}
+    return {"access_token": token, "usuario": _com_tenant_nome(db, usuario)}
 
 @router.post("/logout")
 def logout(request: Request, db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)):
@@ -139,5 +146,5 @@ async def google_callback(code: str | None = None, request: Request = None, db: 
     return RedirectResponse(f"{frontend}/auth/callback?token={token}")
 
 @router.get("/me", response_model=UsuarioOut)
-def me(cu: Usuario = Depends(get_current_user)):
-    return cu
+def me(db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)):
+    return _com_tenant_nome(db, cu)

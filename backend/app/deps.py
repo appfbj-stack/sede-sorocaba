@@ -43,6 +43,10 @@ def require_roles(*perfis: str):
 require_master = require_roles("master")
 require_admin = require_roles("master", "admin")
 
+def congregacao_filter(cu: Usuario = Depends(get_current_user)) -> str | None:
+    """Master/admin veem todas as congregações; demais perfis ficam restritos à própria."""
+    return None if cu.perfil in ("master", "admin") else cu.congregacao_id
+
 def require_active_license(db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)) -> Usuario:
     from app.models import Licenca
     licenca = db.query(Licenca).filter(Licenca.tenant_id == cu.tenant_id).first()
