@@ -20,9 +20,7 @@ def _seed():
             tenant = Tenant(nome=settings.TENANT_NOME, slug=settings.TENANT_SLUG, ativo=True)
             db.add(tenant)
             db.flush()
-
         get_or_create_licenca(db, tenant.id, settings.LICENCA_DIAS_TESTE)
-
         email = settings.ADMIN_EMAIL.strip()
         if email and not db.query(Usuario).filter(Usuario.email == email).first():
             db.add(Usuario(
@@ -30,7 +28,7 @@ def _seed():
                 perfil="master", ativo=True,
                 senha_hash=hash_password(settings.ADMIN_PASSWORD) if settings.ADMIN_PASSWORD else None,
             ))
-            db.commit()
+        db.commit()
     finally:
         db.close()
 
@@ -59,6 +57,7 @@ from app.routes import (
     admin, agenda, auth, batismos, carteirinhas, congregacoes, dashboard,
     master, membros, obreiros, patrimonio, usuarios,
 )
+from app.routes import assistente
 
 app = FastAPI(title=f"{settings.APP_NAME} API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -78,6 +77,7 @@ app.include_router(batismos.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(master.router, prefix="/api")
+app.include_router(assistente.router, prefix="/api")
 
 @app.get("/api/health")
 def health():
