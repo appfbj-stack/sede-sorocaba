@@ -9,21 +9,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 dias
 
-    # Licença / tenant inicial (criados automaticamente no primeiro start)
     TENANT_NOME: str = "Empresa Exemplo"
     TENANT_SLUG: str = "empresa-exemplo"
     LICENCA_DIAS_TESTE: int = 14
 
-    # Master inicial (criado automaticamente no primeiro start)
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
 
-    # Login com Google (OAuth2) — opcional, além do login por e-mail/senha
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = ""
 
-    # E-mail (recuperação de senha) — se vazio, o link é apenas logado no console
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -31,8 +27,14 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "no-reply@kairos.local"
 
     FRONTEND_URL: str = "http://localhost:5173"
-
     UPLOAD_DIR: str = "uploads"
+
+    # Assistente IA (OpenRouter)
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "google/gemini-flash-1.5"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    ASSISTENTE_MAX_TOKENS: int = 1024
+    ASSISTENTE_HISTORICO_MAX: int = 20
 
     class Config:
         env_file = ".env"
