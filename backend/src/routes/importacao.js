@@ -52,7 +52,7 @@ function validarCPF(cpf) {
 function detectarDuplicidade(db, membro, congregacao_id) {
   if (membro.cpf) {
     const cpfLimpo = membro.cpf.replace(/\D/g, '');
-    const existe = db.prepare('SELECT id, nome FROM membros WHERE REPLACE(cpf, "-", "") = ? OR REPLACE(cpf, ".", "") = ?').get(cpfLimpo, cpfLimpo);
+    const existe = db.prepare("SELECT id, nome FROM membros WHERE REPLACE(cpf, '-', '') = ? OR REPLACE(cpf, '.', '') = ?").get(cpfLimpo, cpfLimpo);
     if (existe) return { tipo: 'cpf', existente: existe };
   }
   if (membro.nome) {
@@ -143,10 +143,10 @@ router.post('/confirmar', upload.single('dummy'), async (req, res) => {
   const db = getDb();
   const resultado = { importados: 0, atualizados: 0, duplicados: 0, rejeitados: 0, erros: [] };
 
-  const inserir = db.prepare(`INSERT INTO membros (id, congregacao_id, nome, cpf, rg, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, criado_em, atualizado_em)
-    VALUES (@id, @congregacao_id, @nome, @cpf, @rg, @data_nascimento, @telefone, @whatsapp, @endereco, @estado_civil, @data_conversao, @data_batismo, @cargo, @status, @observacoes, @criado_em, @atualizado_em)`);
+  const inserir = db.prepare(`INSERT INTO membros (id, congregacao_id, nome, cpf, rg, email, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, criado_em, atualizado_em)
+    VALUES (@id, @congregacao_id, @nome, @cpf, @rg, @email, @data_nascimento, @telefone, @whatsapp, @endereco, @estado_civil, @data_conversao, @data_batismo, @cargo, @status, @observacoes, @criado_em, @atualizado_em)`);
 
-  const atualizar = db.prepare(`UPDATE membros SET nome=@nome, cpf=@cpf, telefone=@telefone, whatsapp=@whatsapp, data_nascimento=@data_nascimento, atualizado_em=@atualizado_em WHERE id=@id`);
+  const atualizar = db.prepare(`UPDATE membros SET nome=@nome, cpf=@cpf, email=@email, telefone=@telefone, whatsapp=@whatsapp, data_nascimento=@data_nascimento, atualizado_em=@atualizado_em WHERE id=@id`);
 
   const importar = db.transaction(() => {
     for (let i = 0; i < linhas.length; i++) {

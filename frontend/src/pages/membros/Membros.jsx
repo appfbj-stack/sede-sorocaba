@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import api from '../../services/api';
 import { formatarData, calcularIdade, STATUS_MEMBRO } from '../../lib/utils';
 import { Plus, Search, Filter, ChevronLeft, ChevronRight, Edit, Trash2, User } from 'lucide-react';
@@ -16,7 +16,7 @@ export default function Membros() {
   const { data, isLoading } = useQuery({
     queryKey: ['membros', busca, status, page],
     queryFn: () => api.get('/membros', { params: { busca, status, page, limit: 20 } }).then(r => r.data),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const deletar = useMutation({

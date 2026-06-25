@@ -52,6 +52,7 @@ function initDb() {
       nome TEXT NOT NULL,
       cpf TEXT,
       rg TEXT,
+      email TEXT,
       data_nascimento TEXT,
       telefone TEXT,
       whatsapp TEXT,

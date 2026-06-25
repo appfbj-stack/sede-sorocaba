@@ -71,8 +71,8 @@ router.post('/', upload.single('foto'), (req, res) => {
   const foto_url = req.file ? `/uploads/membros/${req.file.filename}` : null;
   const congregacao_id = req.congregacaoFiltro || req.body.congregacao_id;
   const dados = { id, congregacao_id, foto_url, ...req.body, criado_em: agora, atualizado_em: agora };
-  db.prepare(`INSERT INTO membros (id, congregacao_id, foto_url, nome, cpf, rg, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, criado_em, atualizado_em)
-    VALUES (@id, @congregacao_id, @foto_url, @nome, @cpf, @rg, @data_nascimento, @telefone, @whatsapp, @endereco, @estado_civil, @data_conversao, @data_batismo, @cargo, @status, @observacoes, @criado_em, @atualizado_em)`).run(dados);
+  db.prepare(`INSERT INTO membros (id, congregacao_id, foto_url, nome, cpf, rg, email, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, criado_em, atualizado_em)
+    VALUES (@id, @congregacao_id, @foto_url, @nome, @cpf, @rg, @email, @data_nascimento, @telefone, @whatsapp, @endereco, @estado_civil, @data_conversao, @data_batismo, @cargo, @status, @observacoes, @criado_em, @atualizado_em)`).run(dados);
   enfileirar('membros', 'upsert', dados);
   registrarAuditoria(req.usuario.id, 'create', 'membros', id, null, dados, req.ip);
   res.status(201).json(dados);
@@ -85,11 +85,11 @@ router.put('/:id', upload.single('foto'), (req, res) => {
   if (req.congregacaoFiltro && antes.congregacao_id !== req.congregacaoFiltro) return res.status(403).json({ erro: 'Acesso negado' });
   const agora = new Date().toISOString();
   const foto_url = req.file ? `/uploads/membros/${req.file.filename}` : antes.foto_url;
-  const { nome, cpf, rg, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes } = req.body;
-  db.prepare(`UPDATE membros SET nome=@nome, cpf=@cpf, rg=@rg, data_nascimento=@data_nascimento, telefone=@telefone, whatsapp=@whatsapp, endereco=@endereco,
+  const { nome, cpf, rg, email, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes } = req.body;
+  db.prepare(`UPDATE membros SET nome=@nome, cpf=@cpf, rg=@rg, email=@email, data_nascimento=@data_nascimento, telefone=@telefone, whatsapp=@whatsapp, endereco=@endereco,
     estado_civil=@estado_civil, data_conversao=@data_conversao, data_batismo=@data_batismo, cargo=@cargo, status=@status, observacoes=@observacoes,
     foto_url=@foto_url, atualizado_em=@atualizado_em WHERE id=@id`)
-    .run({ nome, cpf, rg, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, foto_url, atualizado_em: agora, id: req.params.id });
+    .run({ nome, cpf, rg, email, data_nascimento, telefone, whatsapp, endereco, estado_civil, data_conversao, data_batismo, cargo, status, observacoes, foto_url, atualizado_em: agora, id: req.params.id });
   const depois = db.prepare('SELECT * FROM membros WHERE id = ?').get(req.params.id);
   enfileirar('membros', 'upsert', depois);
   registrarAuditoria(req.usuario.id, 'update', 'membros', req.params.id, antes, depois, req.ip);
