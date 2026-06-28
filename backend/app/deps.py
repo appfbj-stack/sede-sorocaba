@@ -7,25 +7,25 @@ from app.models import LogAtividade, Sessao, Tenant, Usuario
 from app.services.license import sincronizar_status
 from app.utils import new_id
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 def get_current_user(db: Session = Depends(get_db), token: str | None = Depends(oauth2_scheme)) -> Usuario:
     if not token:
-        raise HTTPException(status_code=401, detail="Token não fornecido")
+        raise HTTPException(status_code=401, detail="Token nao fornecido")
     try:
         payload = decode_token(token)
     except ValueError:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+        raise HTTPException(status_code=401, detail="Token invalido ou expirado")
 
     jti = payload.get("jti")
     if jti:
         sessao = db.query(Sessao).filter(Sessao.jti == jti).first()
         if not sessao or sessao.revogada_em is not None:
-            raise HTTPException(status_code=401, detail="Sessão encerrada, faça login novamente")
+            raise HTTPException(status_code=401, detail="Sessao encerrada, faca login novamente")
 
     usuario = db.query(Usuario).filter(Usuario.id == payload["sub"], Usuario.ativo.is_(True)).first()
     if not usuario:
-        raise HTTPException(status_code=401, detail="Usuário inativo ou não encontrado")
+        raise HTTPException(status_code=401, detail="Usuario inativo ou nao encontrado")
 
     tenant = db.query(Tenant).filter(Tenant.id == usuario.tenant_id).first()
     if not tenant or not tenant.ativo:
@@ -36,7 +36,7 @@ def get_current_user(db: Session = Depends(get_db), token: str | None = Depends(
 def require_roles(*perfis: str):
     def _check(cu: Usuario = Depends(get_current_user)) -> Usuario:
         if cu.perfil not in perfis:
-            raise HTTPException(status_code=403, detail="Acesso não permitido")
+            raise HTTPException(status_code=403, detail="Acesso nao permitido")
         return cu
     return _check
 
@@ -44,17 +44,16 @@ require_master = require_roles("master")
 require_admin = require_roles("master", "admin")
 
 def congregacao_filter(cu: Usuario = Depends(get_current_user)) -> str | None:
-    """Master/admin veem todas as congregações; demais perfis ficam restritos à própria."""
-    return None if cu.perfil in ("master", "admin") else cu.congregacao_id
+    return None if cu.perfil in ("master", "admin", "sede") else cu.congregacao_id
 
 def require_active_license(db: Session = Depends(get_db), cu: Usuario = Depends(get_current_user)) -> Usuario:
     from app.models import Licenca
     licenca = db.query(Licenca).filter(Licenca.tenant_id == cu.tenant_id).first()
     if not licenca:
-        raise HTTPException(status_code=402, detail="Licença não configurada")
+        raise HTTPException(status_code=402, detail="Licenca nao configurada")
     licenca = sincronizar_status(db, licenca)
     if not licenca.acesso_liberado():
-        raise HTTPException(status_code=402, detail=f"Licença {licenca.status}. Entre em contato com o administrador.")
+        raise HTTPException(status_code=402, detail=f"Licenca {licenca.status}. Entre em contato com o administrador.")
     return cu
 
 def log_activity(db: Session, tenant_id: int, usuario_id: str | None, acao: str,
