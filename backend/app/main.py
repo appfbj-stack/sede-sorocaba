@@ -8,9 +8,15 @@ from app.core.database import engine, SessionLocal
 from app.core.security import hash_password
 from app.models import Base, Licenca, Tenant, Usuario
 from app.services.license import get_or_create_licenca, sincronizar_status
+from app.services.kairos_integration import KairosIntegration
 from app.utils import new_id
 
 Base.metadata.create_all(bind=engine)
+
+_kairos: KairosIntegration | None = None
+
+def get_kairos() -> KairosIntegration | None:
+    return _kairos
 
 def _seed():
     db = SessionLocal()
@@ -49,9 +55,17 @@ def _log_license_status():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _kairos
     _seed()
     _log_license_status()
+    _kairos = KairosIntegration(
+        admin_url=settings.KAIROS_ADMIN_URL,
+        client_id=settings.KAIROS_CLIENT_ID,
+        api_key=settings.KAIROS_API_KEY or settings.KAIROS_ADMIN_BASIC_PASSWORD or "",
+    )
+    await _kairos.register()
     yield
+    await _kairos.close()
 
 from app.routes import (
     admin, agenda, auth, batismos, carteirinhas, congregacoes, dashboard,
@@ -87,4 +101,10 @@ app.include_router(tenant.router, prefix="/api")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "app": settings.APP_NAME}
+    kairos = get_kairos()
+    return {
+        "status": "ok",
+        "app": settings.APP_NAME,
+        "kairos_registered": kairos._registered if kairos else False,
+        "kairos_url": settings.KAIROS_ADMIN_URL or None,
+    }

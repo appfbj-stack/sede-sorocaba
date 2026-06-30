@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     KAIROS_CLIENT_ID: str = ""
     KAIROS_ADMIN_BASIC_USER: str = ""
     KAIROS_ADMIN_BASIC_PASSWORD: str = ""
+    KAIROS_API_KEY: str = ""
 
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
