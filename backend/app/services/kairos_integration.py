@@ -142,7 +142,7 @@ class KairosIntegration:
             return False
         try:
             r = await self._http.post(
-                f"{self.admin_url}/api/apps/register",
+                f"{self.admin_url}/api/tools/apps/register",
                 json=APP_DEFINITION,
                 headers=self._headers(),
             )
@@ -168,7 +168,7 @@ class KairosIntegration:
             return False
         try:
             r = await self._http.patch(
-                f"{self.admin_url}/api/apps/{APP_DEFINITION['slug']}/heartbeat",
+                f"{self.admin_url}/api/tools/apps/{APP_DEFINITION['slug']}/heartbeat",
                 json={"status": "online", "version": APP_DEFINITION["version"]},
                 headers=self._headers(),
                 timeout=5,
